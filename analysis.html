@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Activity Analytics Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    
+    <!-- Load libraries before your script -->
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    
+
+    <script src="analysis.js"></script>
+    
+
+    
+    <!-- Enhanced styling -->
+    <style>
+        .metric-card {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            transition: transform 0.3s;
+        }
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+        .visualization-container {
+            background-color: #f9fafb;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .insight-card {
+            @apply bg-white rounded-lg p-4 shadow-md;
+            transition: all 0.3s ease;
+        }
+        
+        .insight-card:hover {
+            @apply shadow-lg transform -translate-y-1;
+        }
+
+        .tooltip {
+            @apply absolute bg-gray-800 text-white p-2 rounded text-sm;
+            z-index: 1000;
+        }
+
+        .legend-item {
+            @apply cursor-pointer hover:opacity-75;
+        }
+
+        .tab-active {
+            @apply bg-blue-500 text-white;
+        }
+        @media print {
+        .visualization-container {
+                break-inside: avoid;
+                page-break-inside: avoid;
+        }
+        canvas {
+                max-width: 100% !important;
+                height: auto !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Navigation/Time Range Selector -->
+    <nav class="bg-white shadow-sm mb-6">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex justify-between items-center">
+                <div class="flex space-x-4">
+                    <h2 class="text-lg font-semibold">TrackIt</h2>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-8">
+        <header class="mb-12">
+            <h1 class="text-4xl font-bold text-gray-800">Activity Analytics Dashboard</h1>
+            <p class="text-gray-600">Deep insights into your computer usage patterns</p>
+        </header>
+
+        <!-- Quick Summary Section -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+            <h2 class="text-2xl font-bold mb-4">Quick Summary</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="stat-card">
+                    <h3 class="text-lg font-semibold text-gray-600">Total Active Time</h3>
+                    <p id="totalActiveTime" class="text-2xl font-bold">-</p>
+                </div>
+                <div class="stat-card">
+                    <h3 class="text-lg font-semibold text-gray-600">Most Used App</h3>
+                    <p id="mostUsedApp" class="text-2xl font-bold">-</p>
+                </div>
+                <!-- Add other summary stats as needed -->
+            </div>
+        </div>
+
+        <!-- Metric Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="metric-card">
+                <h3 class="text-lg font-semibold mb-2">Productivity Score</h3>
+                <div class="text-3xl font-bold text-blue-600" id="productivityScore">-</div>
+                <p class="text-sm text-gray-600 mt-2">Based on application usage patterns</p>
+            </div>
+            <div class="metric-card">
+                <h3 class="text-lg font-semibold mb-2">Focus Score</h3>
+                <div class="text-3xl font-bold text-green-600" id="focusScore">-</div>
+                <p class="text-sm text-gray-600 mt-2">Percentage of long, focused sessions</p>
+            </div>
+            <div class="metric-card">
+                <h3 class="text-lg font-semibold text-gray-600">Work-Life Balance</h3>
+                <div id="workLifeBalance" class="mt-2">
+                    <!-- Content will be dynamically inserted -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Visualizations -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="visualization-container">
+                <h2 class="text-xl font-semibold mb-4">Activity Timeline</h2>
+                <div id="timeline"></div>
+            </div>
+            <div class="visualization-container">
+                <h2 class="text-xl font-semibold mb-4">Application Usage</h2>
+                <canvas id="appUsage"></canvas>
+            </div>
+        </div>
+
+        <!-- Additional Visualizations -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+            <div class="visualization-container">
+                <h2 class="text-xl font-semibold mb-4">Usage Patterns</h2>
+                <canvas id="usagePatterns"></canvas>
+            </div>
+            <div class="visualization-container">
+                <h2 class="text-xl font-semibold mb-4">Multi-dimensional Analysis</h2>
+                <canvas id="multiAnalysis"></canvas>
+            </div>
+        </div>
+
+
+
+        <!-- Weekly Trends -->
+        <div class="visualization-container">
+            <h2 class="text-xl font-semibold mb-4">Weekly Usage Trends</h2>
+            <canvas id="weeklyTrends"></canvas>
+        </div>
+
+        <!-- Enhanced Insights Section -->
+        <div class="mt-8">
+            <h2 class="text-2xl font-semibold mb-4">Smart Insights</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <template id="insight-template">
+                    <div class="insight-card">
+                        <div class="icon"></div>
+                        <h3 class="title"></h3>
+                        <p class="message"></p>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Recommendations Section -->
+        <div class="mt-8 bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-semibold mb-4">Recommendations</h2>
+            <div id="recommendations" class="space-y-4">
+                <!-- Dynamic recommendations will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Help/Tutorial Modal -->
+    <div id="helpModal" class="modal hidden">
+        <!-- Tutorial content -->
+    </div>
+
+    <script>
+        // Add interactive features
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize tooltips
+            // Setup event listeners
+            // Initialize help system
+        });
+    </script>
+</body>
+</html>
+
