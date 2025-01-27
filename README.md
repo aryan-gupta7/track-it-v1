@@ -18,11 +18,6 @@
     pip install -r requirements.txt
     ```
 
-3. **Install Node.js dependencies** (if any):
-    ```sh
-    npm install
-    ```
-
 ## Usage
 
 1. **Start the application**:
